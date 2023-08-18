@@ -19,7 +19,6 @@ import {
 	fetch_details_by_user_id,
 	fetch_all_users_details,
 } from "../schemas/details.schema";
-import { fetch_prefs_by_id } from "../schemas/prefs.schema";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
 	[`&.${tableCellClasses.head}`]: {
@@ -58,6 +57,11 @@ export default function CustomizedTables() {
 				setisLoading(true);
 
 				const user_data = await fetch_details_by_user_id(id);
+				if (!user_data) {
+					alert("Please fill all details in the section!");
+					setisLoading(false);
+					return;
+				}
 				const pref_details = user_data.prefs;
 
 				if (!pref_details) {
@@ -139,11 +143,20 @@ const findBestMatchesUsingGaleShapley = (
 
 	while (unmatchedMen.length > 0) {
 		const man = unmatchedMen.pop();
+
+		if (!man.prefs) {
+			continue;
+		}
+
 		const preferences = man.prefs.map((pref) => pref.key);
 
 		for (const pref of preferences) {
 			const potentialMatches = userList.filter((user) => {
 				if (user.doc_id !== man.doc_id) {
+					if (!user.prefs) {
+						return false;
+					}
+
 					return user.prefs.some((p) => p.key === pref);
 				}
 				return false;
@@ -157,6 +170,9 @@ const findBestMatchesUsingGaleShapley = (
 					break;
 				} else {
 					const currentMatch = womenMatched[woman.doc_id];
+					if (!woman.prefs) {
+						continue;
+					}
 					const currentMatchIndex = woman.prefs.findIndex(
 						(p) => p.key === currentMatch
 					);
@@ -193,7 +209,8 @@ const findBestMatchesUsingGaleShapley = (
 	}
 
 	const best_match_pair = stableMatches.filter(
-		(v) => v.man.doc_id === currentUserDoc_id
+		(v) =>
+			v.man.doc_id === currentUserDoc_id || v.woman.doc_id === currentUserDoc_id
 	)[0];
 
 	let best_match_for_user;
